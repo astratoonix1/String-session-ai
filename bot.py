@@ -10,7 +10,9 @@ Personal Telegram Auto-Reply Userbot (Render-ready)
 import os
 import time
 import logging
+import threading
 import requests
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
 
@@ -69,8 +71,8 @@ async def handler(event):
     if not event.is_private:
         return
 
-    # Khud ka bheja message ya Saved Messages skip
-    if event.out or event.is_self:
+    # Khud ka bheja message skip (event.out hi kaafi hai, is_self attribute exist nahi karta)
+    if event.out:
         return
 
     sender = await event.get_sender()
@@ -94,7 +96,30 @@ async def handler(event):
     log.info(f"Auto-reply sent -> {getattr(sender, 'first_name', 'Unknown')} ({user_id})")
 
 
+class _HealthCheckHandler(BaseHTTPRequestHandler):
+    """Render (Web Service type) ko khush karne ke liye dummy HTTP server.
+    Agar service ko Background Worker banate ho, iski zaroorat nahi padegi."""
+
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is running")
+
+    def log_message(self, format, *args):
+        pass  # Render access logs ko spam hone se rokne ke liye
+
+
+def start_health_server():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(("0.0.0.0", port), _HealthCheckHandler)
+    log.info(f"Dummy health-check server chalu hua port {port} par")
+    server.serve_forever()
+
+
 def main():
+    # Dummy HTTP server ek alag thread me — sirf Render Web Service ke port-check ke liye
+    threading.Thread(target=start_health_server, daemon=True).start()
+
     log.info("Bot start ho raha hai...")
     client.start()
     log.info("Bot chalu ho gaya, messages sunn raha hai.")
