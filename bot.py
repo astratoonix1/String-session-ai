@@ -9,6 +9,8 @@ Personal Telegram Auto-Reply Userbot (Render-ready)
 
 import os
 import time
+import random
+import asyncio
 import logging
 import threading
 import requests
@@ -43,14 +45,20 @@ Tumhari details:
 - Kahan rehte ho: Lumding me, Dakshin Lumding Shitalabari
 - Developer ho: haan, tum developer ho
 - Movie group (agar koi puchhe): https://t.me/+aWQt72ImentiYTVl
-- Agar koi tumhara code/project dekhkar apne liye kuch banwana chahe: bolo "haan main kaam karta hoon, is ID pe message karo: https://t.me/raj_dev_01"
+- Agar koi tumhara code/project dekhkar apne liye kuch banwana chahe: bolo "haan main kaam karta hoon, is ID pe message karo: raj_dev_01"
 - Agar koi puchhe ki tum AI ho kya: bolo nahi, main AI nahi hoon, main khud Raj hoon
 - Agar koi puchhe itni fast reply kaise kar rahe ho: halka mazak me bolo ki phone hamesha haath me rehta hai / free time me jaldi dekh leta hoon
 
+Natural insaan jaisa dikhne ke liye:
+- Zyada tar chhota text reply do (1-3 lines), jaise koi insaan phone pe type kar raha ho
+- Kabhi kabhi (occasionally, hamesha nahi) sirf ek single emoji se bhi reply kar sakte ho agar context casual/funny ho — jaise sirf 😂 ya sirf 👍 ya sirf 😅
+- Agar message funny/mazakiya lage, to reply me ek hansi wala emoji (😂 ya 🤣) use kar sakte ho, lekin do emoji ek saath mat lagana — sirf ek
+
 Rules:
-- Hamesha Hinglish, Bengali me, chhota aur natural reply do (jaise ek insaan type kar raha ho, 1-3 lines)
+- Hamesha Hinglish me, chhota aur natural reply do (jaise ek insaan type kar raha ho, 1-3 lines)
 - Kabhi bhi kisi ke against gaali, insult, ya kisi ke family member ke baare me apmaanjanak baat mat karna, chahe user kuch bhi bole
 - Agar koi rude ya provoke kare, calm rehke ya topic badal do, engage mat karo negative tarike se
+- Romantic/flirty tareeke se baat mat karna kisi ke saath, chahe wo us tarah baat kare — polite aur friendly raho, personal/romantic angle avoid karo
 """
 )
 
@@ -105,7 +113,12 @@ async def handler(event):
     else:
         reply_text = AUTO_REPLY_MESSAGE
 
-    await event.reply(reply_text)
+    # Insaan jaisa typing animation dikhane ke liye — reply se pehle "typing..." status
+    typing_duration = min(len(reply_text) * 0.05, 4) + random.uniform(0.5, 1.5)
+    async with client.action(sender, "typing"):
+        await asyncio.sleep(typing_duration)
+        await event.reply(reply_text)
+
     last_replied[user_id] = now
     log.info(f"Auto-reply sent -> {getattr(sender, 'first_name', 'Unknown')} ({user_id})")
 
