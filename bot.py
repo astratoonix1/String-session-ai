@@ -257,6 +257,45 @@ def check_keyword_response(text: str):
     return None
 
 
+# ==== LOCAL RULE ENGINE -- bina Gemini API call kiye common cheezein handle karo ====
+# Yeh Gemini quota bachata hai. Sirf jo yahan match nahi hota, wahi Gemini ko jata hai.
+import re as _re
+
+LOCAL_RULES = [
+    (r"\b(time|समय)\b.*\b(kya|kitna|kitne)\b|\b(kitna|kitne)\b.*\btime\b",
+     lambda: f"Abhi {datetime.now().strftime('%I:%M %p')} baj rahe hain ⏰"),
+
+    (r"\b(date|din|day)\b.*\b(kya|kaunsa|kaun sa)\b|\bâj\b.*\bdate\b",
+     lambda: f"Aaj {datetime.now().strftime('%A, %d %B %Y')} hai 📅"),
+
+    (r"\b(tera|tumhara|aapka)\s*naam\b|\bwho are you\b|\bkaun ho\b|\btu kaun\b",
+     lambda: "Main Raj Dev hoon, Lumding, Assam se 👋"),
+
+    (r"^(hi|hii+|hello+|hey+|namaste)\b",
+     lambda: random.choice(["Hii! Kaise ho? 👋", "Hey bhai, bolo!", "Namaste 🙏 Kya haal?"])),
+
+    (r"\bkaise ho\b|\bkya haal\b|\bkaisa hai\b",
+     lambda: random.choice(["Badhiya bhai, tum batao? 😎", "Sab theek hai, tum sunao"])),
+
+    (r"\bkya kar raha\b|\bwhat.*doing\b",
+     lambda: random.choice(["Bas kaam me busy hoon 💻", "Thoda kaam nipta raha hoon"])),
+
+    (r"\bthanks\b|\bthank you\b|\bdhanyavad\b|\bshukriya\b",
+     lambda: random.choice(["Koi baat nahi 🙏", "Welcome bhai 👍"])),
+
+    (r"\bbye\b|\balvida\b|\bchalta hoon\b|\bchalti hoon\b",
+     lambda: random.choice(["Bye bhai, milte hain 👋", "Chalo phir, take care"])),
+]
+
+
+def get_local_reply(text: str):
+    t = text.lower().strip()
+    for pattern, responder in LOCAL_RULES:
+        if _re.search(pattern, t):
+            return responder()
+    return None
+
+
 def get_gemini_reply(user_id: int, incoming_text: str) -> str:
     try:
         contents = []
@@ -400,8 +439,12 @@ async def handler(event):
 
     # Keyword-based instant reply (Gemini call skip)
     keyword_reply = check_keyword_response(text)
+    local_reply = get_local_reply(text) if not keyword_reply else None
+
     if keyword_reply:
         reply_text = keyword_reply
+    elif local_reply:
+        reply_text = local_reply  # Gemini call hi nahi hui, quota bachi
     elif USE_GEMINI and GEMINI_API_KEY:
         reply_text = get_gemini_reply(user_id, text)
     else:
@@ -461,4 +504,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-  
+                                      
