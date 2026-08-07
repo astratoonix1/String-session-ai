@@ -18,6 +18,13 @@ import requests
 from collections import defaultdict
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+IST = ZoneInfo("Asia/Kolkata")
+
+def now_ist() -> datetime:
+    """Hamesha India (IST) time do, Render server ka UTC time nahi."""
+    return datetime.now(IST)
 
 from telethon import TelegramClient, events, functions
 from telethon.sessions import StringSession
@@ -71,10 +78,10 @@ MONGO_URI = os.environ.get("MONGO_URI", "")  # khaali ho to in-memory hi chalega
 
 GEMINI_SYSTEM_PROMPT = os.environ.get(
     "GEMINI_SYSTEM_PROMPT",
-    """Tum Raj Dev ho, Telegram par apne DM ka khud reply de rahe ho (Hinglish me, casual friendly tone).
+    """Tum dona Dey ho, Telegram par apne DM ka khud reply de rahe ho (English Bengali mix tone me replay de rahe ho).
 
 Tumhari details:
-- Naam: Raj Dev
+- Naam: dona Dey
 - Kahan se ho: Lumding, Assam
 - Kahan rehte ho: Lumding me, Dakshin Lumding Shitalabari
 - Developer ho: haan, tum developer ho
@@ -93,9 +100,9 @@ Natural insaan jaisa dikhne ke liye:
 - Agar abhi raat ka time hai to kabhi kabhi bata sakte ho ki neend aa rahi thi
 
 Rules:
-- Hamesha Hinglish, Bengali me, natural reply do
-- Kabhi gaali/insult/kisi ke family member ke baare me apmaanjanak baat mat karna
-- Rude/provoke karne wale se calmly react karo, negative engage mat karo
+- Hamesha Hinglish, English, Bengali me, natural reply do
+- Kabhi gaali/insult/kisi ke family member ke baare me apmaanjanak baat Kare to tum bhi uske sath Aisa Hi karna usko chhodana mat
+- Rude/provoke karne wale se calmly react karo, negative engage karo
 - Romantic/flirty baat mat karna, polite/friendly raho
 - Pichhli baatcheet (context me di gayi) yaad rakhkar consistent raho
 """
@@ -230,14 +237,14 @@ async def handle_abuse_and_block(user_id: int) -> bool:
 
 
 def is_dnd_time() -> bool:
-    hour = datetime.now().hour
+    hour = now_ist().hour
     if DND_START_HOUR > DND_END_HOUR:
         return hour >= DND_START_HOUR or hour < DND_END_HOUR
     return DND_START_HOUR <= hour < DND_END_HOUR
 
 
 def get_time_context() -> str:
-    hour = datetime.now().hour
+    hour = now_ist().hour
     if 0 <= hour < 6:
         return "Abhi raat ka time hai (late night)."
     if 6 <= hour < 12:
@@ -263,28 +270,28 @@ import re as _re
 
 LOCAL_RULES = [
     (r"\b(time|समय)\b.*\b(kya|kitna|kitne)\b|\b(kitna|kitne)\b.*\btime\b",
-     lambda: f"Abhi {datetime.now().strftime('%I:%M %p')} baj rahe hain ⏰"),
+     lambda: f"Abhi {now_ist().strftime('%I:%M %p')} baj rahe hain ⏰"),
 
     (r"\b(date|din|day)\b.*\b(kya|kaunsa|kaun sa)\b|\bâj\b.*\bdate\b",
-     lambda: f"Aaj {datetime.now().strftime('%A, %d %B %Y')} hai 📅"),
+     lambda: f"Aaj {now_ist().strftime('%A, %d %B %Y')} hai 📅"),
 
     (r"\b(tera|tumhara|aapka)\s*naam\b|\bwho are you\b|\bkaun ho\b|\btu kaun\b",
      lambda: "Main Raj Dev hoon, Lumding, Assam se 👋"),
 
     (r"^(hi|hii+|hello+|hey+|namaste)\b",
-     lambda: random.choice(["Hii! Kaise ho? 👋", "Hey bhai, bolo!", "Namaste 🙏 Kya haal?"])),
+     lambda: random.choice(["Hii! Kaise ho? 👋", "Hey, bolo!", "Namaste 🙏 Kya haal?"])),
 
     (r"\bkaise ho\b|\bkya haal\b|\bkaisa hai\b",
-     lambda: random.choice(["Badhiya bhai, tum batao? 😎", "Sab theek hai, tum sunao"])),
+     lambda: random.choice(["Badhiya, tum batao? 😎", "Sab theek hai, tum sunao"])),
 
     (r"\bkya kar raha\b|\bwhat.*doing\b",
      lambda: random.choice(["Bas kaam me busy hoon 💻", "Thoda kaam nipta raha hoon"])),
 
     (r"\bthanks\b|\bthank you\b|\bdhanyavad\b|\bshukriya\b",
-     lambda: random.choice(["Koi baat nahi 🙏", "Welcome bhai 👍"])),
+     lambda: random.choice(["Koi baat nahi 🙏", "Welcome 👍"])),
 
     (r"\bbye\b|\balvida\b|\bchalta hoon\b|\bchalti hoon\b",
-     lambda: random.choice(["Bye bhai, milte hain 👋", "Chalo phir, take care"])),
+     lambda: random.choice(["Bye, milte hain 👋", "Chalo phir, take care"])),
 ]
 
 
@@ -462,7 +469,7 @@ async def handler(event):
 async def daily_summary_loop():
     last_sent_date = None
     while True:
-        now = datetime.now()
+        now = now_ist()
         if DAILY_SUMMARY_ENABLED and now.hour == DAILY_SUMMARY_HOUR and last_sent_date != now.date():
             try:
                 msg = f"📊 Aaj ka summary: {daily_stats['count']} messages, {len(daily_stats['users'])} alag logon se"
@@ -504,4 +511,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-                                      
+    
